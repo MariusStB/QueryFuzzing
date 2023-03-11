@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33403.182
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QueryFuzzing", "QueryFuzzing\QueryFuzzing.csproj", "{D39FADAB-4830-4273-A9BC-00CC8F51BDF4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QueryFuzzingApi", "QueryFuzzingApi\QueryFuzzingApi.csproj", "{2931EF5C-0824-4FB8-892F-6DFCC61DA775}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D39FADAB-4830-4273-A9BC-00CC8F51BDF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D39FADAB-4830-4273-A9BC-00CC8F51BDF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D39FADAB-4830-4273-A9BC-00CC8F51BDF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D39FADAB-4830-4273-A9BC-00CC8F51BDF4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2931EF5C-0824-4FB8-892F-6DFCC61DA775}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2931EF5C-0824-4FB8-892F-6DFCC61DA775}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2931EF5C-0824-4FB8-892F-6DFCC61DA775}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2931EF5C-0824-4FB8-892F-6DFCC61DA775}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A15931E7-D623-49AC-892D-A9625833B16D}
+	EndGlobalSection
+EndGlobal
