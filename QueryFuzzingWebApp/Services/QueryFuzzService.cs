@@ -131,8 +131,22 @@ namespace QueryFuzzingWebApp.Services
             var lastFolderName = Path.GetFileName(
                     inst.Project.Path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
 
+            TargetCreator.CreateTargetFile(inst.InstanceTargets.ToList(), "Temp/targets");
+
+
             List<string> output;
-            output = DockerExecuter.ExecDockerCommand($"cp {project.Path} {dockername}:/home/SVF-tools/fuzzing");
+            output = DockerExecuter.ExecDockerCommand($"exec {dockername} mkdir /home/SVF-tools/fuzzing/{lastFolderName}/build/fuzz");
+            output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"~/gllvm/get-bc ~/fuzzing/{lastFolderName}/build{inst.SelectedExecutable.Path}\"");
+            output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"cp ~/fuzzing/{lastFolderName}/build{inst.SelectedExecutable.Path}.bc ~/fuzzing/{lastFolderName}/build/fuzz/{inst.SelectedExecutable.Name}.bc\"");
+
+            output = DockerExecuter.ExecDockerCommand($"cp Temp/targets {dockername}:/home/SVF-tools/fuzzing/{lastFolderName}/build/fuzz");
+            output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"cd /home/SVF-tools/fuzzing/{lastFolderName}/build/fuzz; ~/windranger/instrument/bin/cbi --targets=targets {inst.SelectedExecutable.Name}.bc \"");
+            output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"cd /home/SVF-tools/fuzzing/{lastFolderName}/build/fuzz; ~/windranger/fuzz/afl-clang-fast {inst.SelectedExecutable.Name}.ci.bc -lpng16 -lm -lz -lfreetype -o {inst.SelectedExecutable.Name}.ci \"");
+            output = DockerExecuter.ExecDockerCommand($"exec {dockername} mkdir /home/SVF-tools/fuzzing/{lastFolderName}/build/fuzz/in");
+            output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"cd /home/SVF-tools/fuzzing/{lastFolderName}/build/fuzz/in && echo > empty.txt \"");
+            output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"cd /home/SVF-tools/fuzzing/{lastFolderName}/build/fuzz; AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 AFL_SKIP_CPUFREQ=1 ~/windranger/fuzz/afl-fuzz -d -i in/ -o out ./{inst.SelectedExecutable.Name}.ci @@ \"");
+
+
         }
 
         //public async Task<string> ExecuteQueryFuzzing(ExecuteQueryFuzzingModel model)
@@ -164,7 +178,7 @@ namespace QueryFuzzingWebApp.Services
             return filepaths.Select(f => new Executable
             {
                 FuzzingInstanceId= instanceId,
-                Path = f.Split(workingDir).Last(),
+                Path = f.Split($"build").Last(),
                 Name = Path.GetFileName(
                     f.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
             }

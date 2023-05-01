@@ -29,4 +29,8 @@
     <ProjectReference Include="..\QueryFuzzing\QueryFuzzing.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Temp\" />
+  </ItemGroup>
+
 </Project>

@@ -69,7 +69,7 @@ namespace QueryFuzzingWebApp.Controllers
 
             _db.FuzzingInstance.Update(inst);
             await _db.SaveChangesAsync();
-
+            await _queryFuzzService.StartFuzzing(inst.Id);
             return View("Index");
         }
 
