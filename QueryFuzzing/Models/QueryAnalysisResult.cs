@@ -1,6 +1,6 @@
 ﻿using QueryFuzzing.Joern.Models;
 
-namespace QueryFuzzingApi.Models
+namespace QueryFuzzing.Models
 {
     public class QueryAnalysisResult
     {

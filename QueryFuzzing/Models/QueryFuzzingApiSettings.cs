@@ -1,4 +1,4 @@
-﻿namespace QueryFuzzingApi.Models
+﻿namespace QueryFuzzing.Models
 {
     public class QueryFuzzingApiSettings
     {

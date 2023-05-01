@@ -6,13 +6,19 @@ namespace QueryFuzzing.TargetFuzzing
 {
     public class TargetCreator
     {
-        public static byte[] CreateTargetFile(List<QueryCallMatch> matches, string path)
+        public static byte[] CreateTargetFile(List<QueryCallMatch> matches, string path, bool excludeTest=true)
         {
             var sb = new StringBuilder();
             byte[] buffer = new byte[10*1024];
-            foreach (var match in matches.GroupBy(m => new {m.LineNumber, m.Filename}).Select(m => m.First()).OrderBy(o=> o.LineNumber))
+            foreach (var match in matches.GroupBy(m => new {m.LineNumber, m.Filename}).Select(m => m.First()).OrderBy(o=> o.Filename))
             {
-                sb.AppendLine($"{match.LineNumber}:{match.Filename}");
+                if(excludeTest)
+                {
+                    if (match.Filename.Contains("test")) { 
+                        continue; 
+                    }
+                }
+                sb.AppendLine($"{match.Filename}:{match.LineNumber}");
             }
 
             using (var ms = new MemoryStream())

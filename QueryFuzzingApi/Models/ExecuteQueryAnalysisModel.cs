@@ -5,9 +5,9 @@ namespace QueryFuzzingApi.Models
 {
     public class ExecuteQueryAnalysisModel
     {
-        [DefaultValue("x42-c")]
+        [DefaultValue("libming-CVE-2018-8807")]
         public string ProjectName { get; set; }
-        [DefaultValue("/home/marius/temp/x42/c")]
+        [DefaultValue("/home/marius/temp/libming-CVE-2018-8807")]
         public string ProjectPath { get; set; }
         [DefaultValue(Language.c)]
         public Language Language { get; set; }

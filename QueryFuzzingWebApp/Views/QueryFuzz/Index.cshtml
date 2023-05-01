@@ -1,0 +1,38 @@
+﻿@using QueryFuzzingWebApp.Database.Models;
+@{
+    ViewData["Title"] = "QueryFuzz";
+}
+@model List<Project>
+
+<div class="text-center">
+    <h1 class="display-4">Project Overview</h1>
+    <p>See all Projects</p>
+    <table class="table">
+     <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Path</th>
+      <th scope="col">Language</th>
+      <th scope="col">Tag</th>
+      <th scope="col">CreatedDate</th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+        @foreach (var p in Model)
+        {
+          <tr>
+            <td>@p.Name</td>
+            <td>@p.Path</td>     
+            <td>@p.Language</td>     
+            <td>@p.Tag</td>     
+            <td>@p.CreatedDate.ToString("dd.MM.yyyy HH:mm:hh")</td>
+             <td>
+                <a href="QueryFuzz/Targets?projectId=@p.Id" role="button" class="btn btn-success"><i class="fas fa-edit"></i></a>
+            </td>
+          </tr>
+        }
+        </tbody>
+    </table>
+</div>
+

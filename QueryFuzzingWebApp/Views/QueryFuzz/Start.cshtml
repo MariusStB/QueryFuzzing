@@ -1,0 +1,52 @@
+﻿@{
+    ViewData["Title"] = "QueryFuzz";
+}
+@model QueryFuzzStartAnalysisModel
+
+<div class="text-center">
+    <h1 class="display-4">QueryFuzzing</h1>
+    <p>Query Fuzz your Application</p>
+</div>
+<form asp-controller="QueryFuzz" asp-action="StartAnalysis" method="post">
+    <div class="form-group">
+        <label for="projectName">Project Name</label>
+        <input asp-for="ProjectName" name="ProjectName" type="text" class="form-control" id="projectName" placeholder="Enter Project Name">
+    </div>
+    <div class="form-group">
+        <label for="projectPath">Project Path</label>
+        <input asp-for="ProjectPath" name="ProjectPath" type=" text" class="form-control" id="projectPath" placeholder="Enter Project Path">
+    </div>
+    <div class="form-group">
+        <label for="language">Language</label>
+        <select asp-for="Language" name="Language" class="form-control" id="language">
+            <option value="0">c</option>
+            <option value="1">java</option>
+            <option value="2">ghidra</option>
+            <option value="3">android</option>
+            <option value="4">kotlin</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="tag">Tag</label>
+        <select asp-for="Tag" name="Tag" class="form-control" id="tag">
+            <option value="0">none</option>
+            <option value="1">badfn</option>
+            <option value="2">metrics</option>
+            <option value="3">integers</option>
+            <option value="4">uaf</option>
+            <option value="5">android</option>
+            <option value="6">setxid</option>
+            <option value="7">badimpl</option>
+            <option value="8">compiler_optimization</option>
+            <option value="9">insecure_network_traffic</option>
+            <option value="10">mis_configuration</option>
+            <option value="11">posix</option>
+            <option value="12">race_condition</option>
+            <option value="13">sql_injection</option>
+            <option value="14">strings</option>
+            <option value="15">xss</option>       
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Start Analysis</button>
+</form>

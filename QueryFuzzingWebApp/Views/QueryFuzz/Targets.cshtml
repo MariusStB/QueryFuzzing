@@ -1,0 +1,36 @@
+﻿@using QueryFuzzingWebApp.Database.Models;
+@{
+    ViewData["Title"] = "Targets";
+}
+@model Project
+
+
+<div class="text-center">
+    <h1 class="display-4">Project</h1>
+    <p>@Model.Name</p>
+    <p>@Model.Path</p>
+    <p>@Model.Language</p>
+    <p>@Model.Tag</p>
+    <p>@Model.CreatedDate.ToString("dd.MM.yyyy HH:mm:ss")</p>
+</div>
+<a href="CreateFuzzingInstance?projectId=@Model.Id" role="button" class="btn btn-primary">Create Instance</a>
+<div class="text-center">
+    <h2 class="display-4">Targets</h2>
+    <table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Filename</th>
+      <th scope="col">Line</th>
+    </tr>
+  </thead>
+  <tbody>
+            @foreach (var t in Model.Targets.OrderBy(t => t.File).ThenBy(t => t.Line))
+            {
+      <tr>
+        <td>@t.File</td>
+        <td>@t.Line</td>     
+      </tr>
+    }
+        </tbody>
+    </table>
+</div>

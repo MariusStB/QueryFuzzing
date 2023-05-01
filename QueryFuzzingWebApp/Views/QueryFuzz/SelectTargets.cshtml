@@ -1,0 +1,38 @@
+﻿@using QueryFuzzingWebApp.Database.Models;
+@{
+    ViewData["Title"] = "Select Targets and Executable";
+}
+@model QueryFuzzTargetExecutableModel
+
+<div class="text-center">
+    <h1 class="display-4">QueryFuzzing</h1>
+    <p>Select Targets and Executable for Fuzzing/p>
+</div>
+<form asp-controller="QueryFuzz" asp-action="StartFuzzing" method="post">
+    
+    <div class="form-group">
+        <label for="selectedExecutable">SelectedExecutable</label>
+        <select asp-for="SelectedExecutable" name="SelectedExecutable" class="form-control" id="selectedExecutable">
+            @foreach(var exe in Model.Project.FuzzingInstance.Single(f=> f.Id == Model.SelectedInstance).Executables)
+            {
+                <option value="@exe.Id">@exe.Name</option>
+            }
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="targets">Targets</label>
+        <select asp-for="Targets" name="Targets" class="form-control" id="targets" multiple>
+            @foreach (ProjectTarget target in Model.Project.Targets)
+            {
+                <option value="@target.Id">@($"{target.File}:{target.Line}")</option>
+            }  
+        </select>
+    </div>
+    <input asp-for="SelectedInstance"
+           name="SelectedInstance"
+           type="hidden"
+           value="@Model.SelectedInstance" />
+
+
+    <button type="submit" class="btn btn-primary">Start Analysis</button>
+</form>

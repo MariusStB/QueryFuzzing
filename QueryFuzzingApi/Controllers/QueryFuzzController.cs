@@ -4,6 +4,8 @@ using QueryFuzzing.Joern;
 using QueryFuzzing.TargetFuzzing;
 using QueryFuzzingApi.Models;
 using System.Reflection;
+using QueryFuzzingApi.Services;
+using QueryFuzzing.Models;
 
 namespace QueryFuzzingApi.Controllers
 {
@@ -13,46 +15,28 @@ namespace QueryFuzzingApi.Controllers
     {
         private readonly ILogger<QueryFuzzController> _logger;
         private readonly IJoernService _joernService;
+        private readonly IQueryFuzzService _queryFuzzService;
 
-        public QueryFuzzController(ILogger<QueryFuzzController> logger, IJoernService joernService)
+        public QueryFuzzController(ILogger<QueryFuzzController> logger, IJoernService joernService, IQueryFuzzService queryFuzzService)
         {
             _logger = logger;
             _joernService = joernService;
-        }      
+            _queryFuzzService = queryFuzzService;
+        }
+
+        [HttpPost("ExecuteQueryFuzzing")]
+        public async Task<string> ExecuteQueryFuzzing([FromForm]ExecuteQueryFuzzingModel model)
+        {
+            _logger.LogInformation("Start Query Fuzzing");
+            return await _queryFuzzService.ExecuteQueryFuzzing(model);
+
+        }
+
 
         [HttpPost("ExecuteQueryAnalysis")]
         public async Task<QueryAnalysisResult> ExecuteQueryAnalysis(ExecuteQueryAnalysisModel model)
         {
-            _logger.LogInformation("Start Query Analysis");
-            var queries = await _joernService.GetQueryDbItems(model.Language, model.Tag);
-
-
-            if (await _joernService.ImportProject(model.ProjectName, model.ProjectPath))
-            {
-                var matchList = new List<QueryCallMatch>();
-                foreach (var query in queries)
-                {
-                    var queryResult = await _joernService.SendQuery(query);
-                    if (queryResult.Any(r => !string.IsNullOrEmpty(r)))
-                    {
-                        foreach (var r in queryResult)
-                        {
-                            matchList.AddRange(QueryListParser.ParseCallList(r));
-                        }
-                    }
-
-                }
-                var file= TargetCreator.CreateTargetFile(matchList, $"{model.TargetPath}\\TargetsBB{DateTime.Now:ddMMyyyyHHmmss}.txt");
-
-                return new QueryAnalysisResult
-                {
-                    QueryCallMatches = matchList,
-                    TargetFile = file
-                };
-
-            }
-            _logger.LogInformation("Query Analysis failed");
-            return null;
+           return await _queryFuzzService.ExecuteQueryAnalysis(model);
             
         }
 
