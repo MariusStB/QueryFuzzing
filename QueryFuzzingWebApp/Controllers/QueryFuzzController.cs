@@ -70,7 +70,8 @@ namespace QueryFuzzingWebApp.Controllers
             _db.FuzzingInstance.Update(inst);
             await _db.SaveChangesAsync();
             await _queryFuzzService.StartFuzzing(inst.Id);
-            return View("Index");
+
+            return RedirectToAction("Status", new { instanceId = inst.Id });
         }
 
         public async Task<IActionResult> CreateFuzzingInstance(int projectId)
@@ -82,6 +83,51 @@ namespace QueryFuzzingWebApp.Controllers
                 SelectedInstance = instance.Id
             };
             return View("SelectTargets", model);
+        }
+
+        public async Task<IActionResult> FuzzingInstance(int projectId)
+        {
+            var project = await _db.Projects.Include(p => p.FuzzingInstance).ThenInclude(i => i.InstanceTargets).SingleOrDefaultAsync(p => p.Id == projectId);
+            if(project == null)
+            {
+                return View("Index");
+            }
+
+            return View(project);
+        }
+
+
+        public async Task<IActionResult> Status(int instanceId)
+        {
+            var inst = await _db.FuzzingInstance.Include(i => i.Project).SingleOrDefaultAsync(i => i.Id == instanceId);
+            if (inst == null)
+            {
+                return View("Index");
+            }
+
+            var status = await _queryFuzzService.GetFuzzingStatus(instanceId);
+            var model = new QueryFuzzStatusModel
+            {
+                Project = inst.Project,
+                SelectedInstance = inst.Id,
+                FuzzingStatus = status
+            };
+
+            return View(model);
+        }
+
+        public async Task<IActionResult> Finish(int instanceId)
+        {
+            var inst = await _db.FuzzingInstance.Include(i => i.Project).SingleOrDefaultAsync(i => i.Id == instanceId);
+            if (inst == null)
+            {
+                return View("Index");
+            }
+
+            var result = await _queryFuzzService.FinishFuzzing(instanceId);
+            
+
+            return View("Index");
         }
     }
 }

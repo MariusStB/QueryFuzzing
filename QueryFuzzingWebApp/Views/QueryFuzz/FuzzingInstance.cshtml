@@ -1,0 +1,43 @@
+﻿@using QueryFuzzingWebApp.Database.Models;
+@{
+    ViewData["Title"] = "Projekt Fuzzing Instances";
+}
+@model Project
+
+<div class="text-center">
+    <h1 class="display-4">QueryFuzzing</h1>
+    <p>Instances of @Model.Name</p>
+</div>
+
+
+<div class="text-center">
+    <h1 class="display-4">Project Overview</h1>
+    <p>See all Projects</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">CreateDate</th>
+                <th scope="col">StartTime</th>
+                <th scope="col">SelectedExecutable</th>
+                <th scope="col">Target Count</th>
+                <th scope="col">Status</th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var i in Model.FuzzingInstance)
+            {
+                <tr>
+                    <td>@i.CreateDate.ToString("dd.MM.yyyy HH:mm:hh")</td>
+                    <td>@i.StartTime.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                    <td>@i.SelectedExecutable</td>
+                    <td>@i.InstanceTargets.Count()</td>
+                    <td></td>
+                    <td>
+                        <a href="Status?instanceId=@i.Id" role="button" class="btn btn-primary"><i class="fas fa-edit"></i></a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,48 @@
+﻿@using QueryFuzzingWebApp.Database.Models;
+@{
+    ViewData["Title"] = "Show Fuzzing Status";
+}
+@model QueryFuzzStatusModel
+
+<div class="text-center">
+    <h1 class="display-4">QueryFuzzing</h1>
+    <p>Status of Fuzzing Projekt @Model.Project.Name</p>
+    <p>FuzzingTime: @Model.FuzzingStatus.last_update.Subtract(Model.FuzzingStatus.start_time)</p>
+</div>
+
+<td class="text-center">
+    <h1 class="display-4">Status</h1>
+    <div class="row">
+        <div class="col-3"></div>
+        <div class="col-6">
+    <table class="table">
+        <tbody>
+    <tr><td>start_time      </td><td>@Model.FuzzingStatus.start_time.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
+    <tr><td>last_update    </td><td>@Model.FuzzingStatus.last_update.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
+    <tr><td>fuzzer_pid     </td><td>@Model.FuzzingStatus.fuzzer_pid</td></tr>
+    <tr><td>cycles_done    </td><td>@Model.FuzzingStatus.cycles_done</td></tr>
+    <tr><td>execs_done     </td><td>@Model.FuzzingStatus.execs_done</td></tr>
+    <tr><td>execs_per_sec  </td><td>@Model.FuzzingStatus.execs_per_sec</td></tr>
+    <tr><td>paths_total    </td><td>@Model.FuzzingStatus.paths_total</td></tr>
+    <tr><td>paths_favored  </td><td>@Model.FuzzingStatus.paths_favored</td></tr>
+    <tr><td>paths_found    </td><td>@Model.FuzzingStatus.paths_found</td></tr>
+    <tr><td>paths_imported </td><td>@Model.FuzzingStatus.paths_imported</td></tr>
+    <tr><td>max_depth      </td><td>@Model.FuzzingStatus.max_depth</td></tr>
+    <tr><td>cur_path       </td><td>@Model.FuzzingStatus.cur_path</td></tr>
+    <tr><td>pending_favs   </td><td>@Model.FuzzingStatus.pending_favs</td></tr>
+    <tr><td>pending_total  </td><td>@Model.FuzzingStatus.pending_total</td></tr>
+    <tr><td>variable_paths </td><td>@Model.FuzzingStatus.variable_paths</td></tr>
+    <tr><td>stability      </td><td>@Model.FuzzingStatus.stability</td></tr>
+    <tr><td>bitmap_cvg     </td><td>@Model.FuzzingStatus.bitmap_cvg</td></tr>
+    <tr><td>unique_crashes </td><td>@Model.FuzzingStatus.unique_crashes</td></tr>
+    <tr><td>unique_hangs   </td><td>@Model.FuzzingStatus.unique_hangs</td></tr>
+    <tr><td>last_path      </td><td>@Model.FuzzingStatus.last_path.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
+    <tr><td>last_crash     </td><td>@Model.FuzzingStatus.last_crash.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
+    <tr><td>last_hang       </td><td>@Model.FuzzingStatus.last_hang.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
+        </tbody>
+    </table>
+        </div>
+        <div class="col-3"></div>
+    </div>
+<a href="Status?instanceId=@Model.SelectedInstance" role="button" class="btn btn-primary">Actualize</a>
+<a href="Finish?instanceId=@Model.SelectedInstance" role="button" class="btn btn-primary">Finish Fuzzing</a>

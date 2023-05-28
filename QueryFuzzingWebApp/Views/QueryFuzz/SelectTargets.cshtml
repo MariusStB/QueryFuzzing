@@ -6,7 +6,7 @@
 
 <div class="text-center">
     <h1 class="display-4">QueryFuzzing</h1>
-    <p>Select Targets and Executable for Fuzzing/p>
+    <p>Select Targets and Executable for Fuzzing</p>
 </div>
 <form asp-controller="QueryFuzz" asp-action="StartFuzzing" method="post">
     
@@ -21,7 +21,7 @@
     </div>
     <div class="form-group">
         <label for="targets">Targets</label>
-        <select asp-for="Targets" name="Targets" class="form-control" id="targets" multiple>
+        <select asp-for="Targets" name="Targets" class="form-control" id="targets" size="50" style="height: 100%" multiple>
             @foreach (ProjectTarget target in Model.Project.Targets.OrderBy(t => t.File))
             {
                 <option value="@target.Id">@($"{target.File}:{target.Line}")</option>
