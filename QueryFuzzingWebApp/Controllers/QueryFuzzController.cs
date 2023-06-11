@@ -62,7 +62,7 @@ namespace QueryFuzzingWebApp.Controllers
             }
 
             inst.SelectedExecutable = _db.Executables.Single(e => e.Id == model.SelectedExecutable);
-            inst.InstanceTargets = _db.Targets.Where(t => model.Targets.Contains(t.Id)).Select(t => new InstanceTarget {
+            inst.InstanceTargets = _db.ProjectTargets.Where(t => model.Targets.Contains(t.Id)).Select(t => new InstanceTarget {
                     File= t.File,
                     Line= t.Line,
                 }).ToList();
@@ -123,11 +123,18 @@ namespace QueryFuzzingWebApp.Controllers
             {
                 return View("Index");
             }
-
-            var result = await _queryFuzzService.FinishFuzzing(instanceId);
             
+            var result = await _queryFuzzService.FinishFuzzing(instanceId);
+            var model = new QueryFuzzResultModel
+            {
+                Project = inst.Project,
+                SelectedInstance = inst.Id,
+                FuzzingResult = result
+            };                       
 
-            return View("Index");
+            return View(model);
         }
+
+        
     }
 }

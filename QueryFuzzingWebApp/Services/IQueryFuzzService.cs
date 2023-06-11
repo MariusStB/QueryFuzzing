@@ -12,7 +12,7 @@ namespace QueryFuzzingWebApp.Services
 
         Task StartFuzzing(int instanceId);
 
-        Task<FuzzingStatus> GetFuzzingStatus(int instanceId);
+        Task<FuzzingStat> GetFuzzingStatus(int instanceId);
 
         Task<FuzzingResult> FinishFuzzing(int instanceId);
     }

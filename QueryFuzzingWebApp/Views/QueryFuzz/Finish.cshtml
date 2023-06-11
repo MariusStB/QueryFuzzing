@@ -1,0 +1,23 @@
+﻿@using QueryFuzzingWebApp.Database.Models;
+@{
+    ViewData["Title"] = "Show Fuzzing Status";
+}
+@model QueryFuzzResultModel
+
+<div class="text-center">
+    <h1 class="display-4">QueryFuzzing</h1>
+    <p>Status of Fuzzing Projekt @Model.Project.Name</p>
+    <p>FuzzingTime: @Model.FuzzingResult.Status.last_update.Subtract(Model.FuzzingResult.Status.start_time)</p>
+</div>
+
+@foreach(var crash in Model.FuzzingResult.Crashes){
+    <div><p>Crashed after @crash.CrashTime.ToString()</p>
+    <p>Involved Targets:</p>
+        @foreach (var crashedTarget in crash.CrashedTargets)
+    {
+        <p>@crashedTarget.File</p>
+        <p>@crashedTarget.Line</p>
+        <p>@crashedTarget.Column</p>
+    }
+    </div>
+}

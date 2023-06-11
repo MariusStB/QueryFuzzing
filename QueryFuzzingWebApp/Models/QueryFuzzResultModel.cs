@@ -2,11 +2,12 @@
 
 namespace QueryFuzzingWebApp.Models
 {
-    public class QueryFuzzStatusModel
+    public class QueryFuzzResultModel
     {
         public Project Project { get; set; }
         public int SelectedInstance { get; set; }
 
-        public FuzzingStat FuzzingStatus { get; set; }
+        public FuzzingResult FuzzingResult { get; set; }
+
     }
 }
