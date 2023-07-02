@@ -10,6 +10,7 @@ namespace QueryFuzzingWebApp.Database.Models
         public Language Language { get; set; }
         public Tag Tag { get; set; }
         public DateTime CreatedDate { get; set; }
+        public TimeSpan QueryTime { get; set; }
         public ICollection<ProjectTarget> Targets { get; set; } = new List<ProjectTarget>();
         public ICollection<FuzzingInstance> FuzzingInstance { get; set; } = new List<FuzzingInstance>();
     }

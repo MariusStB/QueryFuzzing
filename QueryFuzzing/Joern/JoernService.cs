@@ -30,7 +30,7 @@ namespace QueryFuzzing.Joern
                     querydbItems = querydbItems.Where(q => q.Tags.Contains(tag.ToString())).ToList();
                 }
 
-                var queryList = querydbItems.Select(q => $"({{{q.TraversalAsString.Replace("cpg =>\n", "").Trim()}}}).map(c => (c.lineNumber.get, c.location.filename)).toJson").ToList();
+                var queryList = querydbItems.Select(q => $"({{{q.TraversalAsString.Replace("cpg =>\n", "").Trim()}}}).map(c => (c.lineNumber.get, c.location.filename, c.location.methodFullName)).toJson").ToList();
                 //var queryList = querydbItems.Select(q => $"({{{q.TraversalAsString.Replace("cpg =>\n", "").Trim()}}}).l").ToList();
                 return queryList;
             }catch(Exception ex)

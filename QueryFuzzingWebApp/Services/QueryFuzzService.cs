@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.IO.Compression;
 using LoggedTarget = QueryFuzzing.Windranger.Models.LoggedTarget;
 using System.Text;
+using QueryFuzzing.Valgrind;
 
 namespace QueryFuzzingWebApp.Services
 {
@@ -16,13 +17,15 @@ namespace QueryFuzzingWebApp.Services
     {
         private readonly ILogger<QueryFuzzService> _logger;
         private readonly IJoernService _joernService;
+        private readonly IValgrindService _valgrindService;
         private QueryFuzzContext _db;
 
 
-        public QueryFuzzService(ILogger<QueryFuzzService> logger, IJoernService joernService, QueryFuzzContext db)
+        public QueryFuzzService(ILogger<QueryFuzzService> logger, IJoernService joernService,IValgrindService valgrindService, QueryFuzzContext db)
         {
             _logger = logger;
-            _joernService = joernService;   
+            _joernService = joernService;
+            _valgrindService = valgrindService;
             _db = db;
         }
 
@@ -31,7 +34,7 @@ namespace QueryFuzzingWebApp.Services
         {
             try { 
                 _logger.LogInformation("Start Query Analysis");
-               
+                var startDate = DateTime.Now;
 
                 var queries = await _joernService.GetQueryDbItems(model.Language, model.Tag);
 
@@ -47,7 +50,7 @@ namespace QueryFuzzingWebApp.Services
                            int c = queryResult.Count();
                             foreach (var r in queryResult)
                             {
-                                matchList.AddRange(QueryListParser.ParseCallList(r).Select(m => new ProjectTarget { File = m.Filename, Line = m.LineNumber}));
+                                matchList.AddRange(QueryListParser.ParseCallList(r).Select(m => new ProjectTarget { File = Path.GetFileName(m.Path), Path = m.Path, Line = m.LineNumber, Methodname = m.Methodname}));
                             }
                         }
 
@@ -57,7 +60,8 @@ namespace QueryFuzzingWebApp.Services
                     {
                         Name = model.ProjectName,
                         Path = model.ProjectPath,
-                        CreatedDate = DateTime.Now,
+                        CreatedDate = startDate,
+                        QueryTime = DateTime.Now.Subtract(startDate),
                         Language = model.Language,
                         Tag = model.Tag,
                         Targets= matchList
@@ -100,8 +104,8 @@ namespace QueryFuzzingWebApp.Services
             output = DockerExecuter.ExecDockerCommand($"run --name {dockername} -it ardu/windranger", 12000);
             output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"apt-get update\"");
             output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"apt-get install valgrind\"");
-            output = DockerExecuter.ExecDockerCommand($"cp Ressources/afl-fuzz.c {dockername}:/home/SVF-tools/windranger/fuzz");
-            output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"cd /home/SVF-tools/windranger/fuzz;make \"", 12000);
+            //output = DockerExecuter.ExecDockerCommand($"cp Ressources/afl-fuzz.c {dockername}:/home/SVF-tools/windranger/fuzz");
+            //output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"cd /home/SVF-tools/windranger/fuzz;make \"", 12000);
 
 
 
@@ -164,103 +168,16 @@ namespace QueryFuzzingWebApp.Services
            
             DockerExecuter.ExecDockerCommand($"cp {dockername}:/home/SVF-tools/fuzzing/{lastFolderName}/build/fuzz/out/fuzzer_stats Temp");
             var lines = File.ReadLines("Temp/fuzzer_stats");
-            var status = new FuzzingStat();
-            foreach (var line in lines)
-            {
-                var valuePair = line.Split(':');
-                switch (valuePair[0].Trim()) {
-                case "start_time":
-                        status.start_time = new DateTime(1970,1,1,0,0,0,DateTimeKind.Utc).AddSeconds(int.Parse(valuePair[1].Trim()));
-                        break;
-                case "last_update":
-                        status.last_update = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(int.Parse(valuePair[1].Trim()));
-                        break;
-                case "fuzzer_pid": 
-                        status.fuzzer_pid = int.Parse(valuePair[1].Trim());
-                        break;
-                case "cycles_done":
-                        status.cycles_done = int.Parse(valuePair[1].Trim());
-                        break;
-                case "execs_done":
-                        status.execs_done = int.Parse(valuePair[1].Trim());
-                        break;
-                case "execs_per_sec":
-                        status.execs_per_sec = float.Parse(valuePair[1].Trim());
-                        break;
-                case "paths_total":
-                        status.paths_total = int.Parse(valuePair[1].Trim());
-                        break;
-                case "paths_favored":
-                        status.paths_favored = int.Parse(valuePair[1].Trim());
-                        break;
-                case "paths_found":
-                        status.paths_found = int.Parse(valuePair[1].Trim());
-                        break;
-                case "paths_imported":
-                        status.paths_imported = int.Parse(valuePair[1].Trim());
-                        break;
-                case "max_depth":
-                        status.max_depth = int.Parse(valuePair[1].Trim());
-                        break;
-                case "cur_path":
-                        status.cur_path = int.Parse(valuePair[1].Trim());
-                        break;
-                case "pending_favs":
-                        status.pending_favs = int.Parse(valuePair[1].Trim());
-                        break;
-                case "pending_total":
-                        status.pending_total = int.Parse(valuePair[1].Trim());
-                        break;
-                case "variable_paths":
-                        status.variable_paths = int.Parse(valuePair[1].Trim());
-                        break;
-                case "stability": 
-                        status.stability = valuePair[1].Trim();
-                        break;
-                case "bitmap_cvg": 
-                        status.bitmap_cvg = valuePair[1].Trim();
-                        break;
-                case "unique_crashes":
-                        status.unique_crashes = int.Parse(valuePair[1].Trim());
-                        break;
-                case "unique_hangs":
-                        status.unique_hangs = int.Parse(valuePair[1].Trim());
-                        break;
-                case "last_path":
-                        status.last_path = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(int.Parse(valuePair[1].Trim()));
-                        break;
-                case "last_crash":
-                        status.last_crash = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(int.Parse(valuePair[1].Trim()));
-                        break;
-                case "last_hang":
-                        status.last_hang = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(int.Parse(valuePair[1].Trim()));
-                        break;
-                default: break;
-                }
-
-            }
+            var status = await CreateFuzzingStats(lines);
             File.Delete("Temp/fuzzer_stats");
             return status;
-        }
-
-
-        private static List<Executable> GetExecutables(int instanceId, string workingDir, List<string> filepaths)
-        {
-            return filepaths.Select(f => new Executable
-            {
-                FuzzingInstanceId= instanceId,
-                Path = f.Split($"build").Last(),
-                Name = Path.GetFileName(
-                    f.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
-            }
-            ).ToList();
-        }
+        }        
 
         public async Task<FuzzingResult> FinishFuzzing(int instanceId)
         {
             try
             {
-                var inst = await _db.FuzzingInstance.Include(i=> i.FinalStats).Include(i => i.SelectedExecutable).Include(i => i.Project).Include(i => i.Crashes).ThenInclude(c => c.CrashedTargets).SingleOrDefaultAsync(i => i.Id == instanceId);
+                var inst = await _db.FuzzingInstance.Include(i=> i.FinalStats).Include(i => i.SelectedExecutable).Include(i => i.Project).Include(i=> i.InstanceTargets).Include(i => i.Crashes).ThenInclude(c => c.CrashedTargets).SingleOrDefaultAsync(i => i.Id == instanceId);
                 if (inst == null)
                 {
                     throw new Exception();
@@ -301,49 +218,34 @@ namespace QueryFuzzingWebApp.Services
                 var loggedCrashes = new List<LoggedCrash>();
                 var loggedTargets = new List<LoggedTarget>();
                 var instrumentedTargets = new List<InstrumentedTarget>();
+                var valgrindErrorList = new List<QueryFuzzing.Valgrind.Models.ValgrindError>();
                 using (var file = File.OpenRead($"Temp/fuzz_{dockername}.zip"))
                 using (var zip = new ZipArchive(file, ZipArchiveMode.Read))
                 {
-                    foreach (var entry in zip.Entries.Where(e => e.FullName.StartsWith("fuzz/out/valgrind/")))
+
+                    foreach(var entry in zip.Entries.Where(e => e.FullName.StartsWith("fuzz/out/crashes/")))
                     {
-                        var time = entry.LastWriteTime;
                         if (string.IsNullOrEmpty(entry.Name))
                         {
                             continue;
                         }
-                        using (var stream = entry.Open())
+                        try
                         {
-                            var reader = new StreamReader(stream);
-                            while (!reader.EndOfStream)
+                            var crashTime = new DateTime(entry.LastWriteTime.Ticks, DateTimeKind.Utc).ToLocalTime();
+                            var crashLogEntry = zip.Entries.SingleOrDefault(e => e.FullName.StartsWith($"fuzz/out/valgrind/crash_log_{entry.Name}"));
+                            if (crashLogEntry != null)
                             {
-                                reader.ReadLine();
+                                using (var stream = crashLogEntry.Open())
+                                {
 
+                                    valgrindErrorList.AddRange(await _valgrindService.ParseValgrindLog(stream, crashTime.Subtract(status.start_time)));
+                                }
                             }
-
+                        }catch(Exception e)
+                        {
+                            Console.WriteLine(e.ToString());
                         }
-
-                    }
-
-
-
-                    //ZipArchiveEntry e = zip.GetEntry("fuzz/out/crashes.log");
-                    //using (var stream = e.Open())
-                    //{
-                    //    loggedCrashes = ParseLoggedCrashes(stream);
-                    //}
-
-                    //e = zip.GetEntry("fuzz/out/targets.log");
-                    //using (var stream = e.Open())
-                    //{
-                    //    loggedTargets = ParseLoggedTargets(stream);
-                    //}
-
-                    //e = zip.GetEntry("fuzz/targets.txt");
-                    //using (var stream = e.Open())
-                    //{
-                    //    instrumentedTargets = ParseInstrumentedTargets(stream);
-                    //}
-                    
+                    }                    
                 }
 
                 DockerExecuter.ExecDockerCommand($"stop {dockername}");
@@ -351,30 +253,52 @@ namespace QueryFuzzingWebApp.Services
                 inst.EndTime = DateTime.Now;
                 _db.FuzzingInstance.Update(inst);
                 await _db.SaveChangesAsync();
-                foreach (var crash in loggedCrashes)
+                int exactTarget = 0;
+                int methodTarget = 0;
+                foreach(var crash in valgrindErrorList.OrderBy(v =>  v.FuzzingCrashTime))
                 {
-                    var crashedTargets = new List<CrashedTarget>();
-                    foreach (var target in crash.Targets)
+                    foreach(var trace in crash.Stacktrace.Where(s => !s.GlobalLib).OrderBy(s=> s.Id))
                     {
-                        var instrumendetTarget = instrumentedTargets.SingleOrDefault(t => t.Id == target);
-                        if (instrumendetTarget != null)
+                        var crashedTarged = inst.InstanceTargets.Where(t => t.File == trace.ClassName && t.Methodname == trace.Method && t.Line == trace.LineNumber).ToList();
+                        if (crashedTarged.Any())
                         {
-                            crashedTargets.Add(new CrashedTarget
+                            exactTarget++;
+                        }else
+                        {
+                            var methodCrash = inst.InstanceTargets.Where(t => t.File == trace.ClassName && t.Methodname == trace.Method).ToList();
+                            if (methodCrash.Any())
                             {
-                                File = instrumendetTarget.File,
-                                Line = instrumendetTarget.Line,
-                                Column = instrumendetTarget.Column
-                            });
+                                methodTarget++;
+                            }
                         }
                     }
-                    await _db.Crash.AddAsync(new Crash
-                    {
-                        FuzzingInstanceId = instanceId,
-                        CrashTime = new TimeSpan(crash.Days, crash.Hours, crash.Minutes, crash.Seconds, crash.MilliSeconds),
-                        CrashedTargets = crashedTargets
-                    });
-                    await _db.SaveChangesAsync();
                 }
+
+
+                //foreach (var crash in loggedCrashes)
+                //{
+                //    var crashedTargets = new List<CrashedTarget>();
+                //    foreach (var target in crash.Targets)
+                //    {
+                //        var instrumendetTarget = instrumentedTargets.SingleOrDefault(t => t.Id == target);
+                //        if (instrumendetTarget != null)
+                //        {
+                //            crashedTargets.Add(new CrashedTarget
+                //            {
+                //                File = instrumendetTarget.File,
+                //                Line = instrumendetTarget.Line,
+                //                Column = instrumendetTarget.Column
+                //            });
+                //        }
+                //    }
+                //    await _db.Crash.AddAsync(new Crash
+                //    {
+                //        FuzzingInstanceId = instanceId,
+                //        CrashTime = new TimeSpan(crash.Days, crash.Hours, crash.Minutes, crash.Seconds, crash.MilliSeconds),
+                //        CrashedTargets = crashedTargets
+                //    });
+                //    await _db.SaveChangesAsync();
+                //}
 
                 fuzzingResult.Crashes = _db.Crash.Include(c => c.CrashedTargets).Where(c => c.FuzzingInstanceId == instanceId).ToList();
                 return fuzzingResult;
@@ -385,124 +309,216 @@ namespace QueryFuzzingWebApp.Services
             }
         }
 
-        private static List<LoggedCrash> ParseLoggedCrashes(Stream stream)
+        private static List<Executable> GetExecutables(int instanceId, string workingDir, List<string> filepaths)
         {
-            try
+            return filepaths.Select(f => new Executable
             {
-                // convert stream to string
-                StreamReader reader = new StreamReader(stream);
-                var regex = new Regex(@"(?<id>[0-9]+)\s:\s(?<days>[0-9]+)\sdays,\s(?<hrs>[0-9]+)\shrs,\s(?<min>[0-9]+)\smin,\s(?<sec>[0-9]+)\ssec,\s(?<ms>[0-9]+)\sms\s---\s(?<exec>[0-9k]*)\s---\s\[(?<targets>.*?)\]"
-                   , RegexOptions.IgnorePatternWhitespace);
-                var crashList = new List<LoggedCrash>();
-                while (!reader.EndOfStream)
-                {                    
-                    var m = regex.Match(reader.ReadLine()??"");
-                    if(m.Success) {
-                        crashList.Add(new LoggedCrash
-                        {
-                            Id = int.Parse(m.Groups["id"].Value),
-                            Days = int.Parse(m.Groups["days"].Value),
-                            Hours = int.Parse(m.Groups["hrs"].Value),
-                            Minutes = int.Parse(m.Groups["min"].Value),
-                            Seconds = int.Parse(m.Groups["sec"].Value),
-                            MilliSeconds = int.Parse(m.Groups["ms"].Value),
-                            Execution = m.Groups["exec"].Value,
-                            Targets = m.Groups["targets"].Value.Trim().Split(" ").Where(s => !string.IsNullOrEmpty(s)).Select(s => int.Parse(s)).ToList()
-                        });
-                    }                   
-                    
-                }
-
-                return crashList;
-
-            }catch(Exception e)
-            {
-                Console.WriteLine(e.Message);
-                return new List<LoggedCrash>();
+                FuzzingInstanceId = instanceId,
+                Path = f.Split($"build").Last(),
+                Name = Path.GetFileName(
+                    f.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
             }
-           
+            ).ToList();
         }
-
-        private static List<LoggedTarget> ParseLoggedTargets(Stream stream)
+        private async Task<FuzzingStat> CreateFuzzingStats(IEnumerable<string> lines)
         {
-            try
+            var status = new FuzzingStat();
+            foreach (var line in lines)
             {
-                // convert stream to string
-                StreamReader reader = new StreamReader(stream);
-                var regex = new Regex(@"(?<id>[0-9]+)\s:\s(?<days>[0-9]+)\sdays,\s(?<hrs>[0-9]+)\shrs,\s(?<min>[0-9]+)\smin,\s(?<sec>[0-9]+)\ssec\s,\s(?<ms>[0-9]+)\sms\s---\s(?<queue>[0-9]+)\s---\s(?<exec>[^""]*)"
-                   , RegexOptions.IgnorePatternWhitespace);
-                var targetList = new List<LoggedTarget>();
-                while (!reader.EndOfStream)
+                var valuePair = line.Split(':');
+                switch (valuePair[0].Trim())
                 {
-                    var m = regex.Match(reader.ReadLine() ?? "");
-                    if (m.Success)
-                    {
-                        targetList.Add(new LoggedTarget
-                        {
-                            Id = int.Parse(m.Groups["id"].Value),
-                            Days = int.Parse(m.Groups["days"].Value),
-                            Hours = int.Parse(m.Groups["hrs"].Value),
-                            Minutes = int.Parse(m.Groups["min"].Value),
-                            Seconds = int.Parse(m.Groups["sec"].Value),
-                            Queue = int.Parse(m.Groups["queue"].Value),
-                            Execution = m.Groups["exec"].Value
-                        });
-                    }
-                    
+                    case "start_time":
+                        status.start_time = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(int.Parse(valuePair[1].Trim())).ToLocalTime();
+                        break;
+                    case "last_update":
+                        status.last_update = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(int.Parse(valuePair[1].Trim())).ToLocalTime();
+                        break;
+                    case "fuzzer_pid":
+                        status.fuzzer_pid = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "cycles_done":
+                        status.cycles_done = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "execs_done":
+                        status.execs_done = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "execs_per_sec":
+                        status.execs_per_sec = float.Parse(valuePair[1].Trim());
+                        break;
+                    case "paths_total":
+                        status.paths_total = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "paths_favored":
+                        status.paths_favored = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "paths_found":
+                        status.paths_found = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "paths_imported":
+                        status.paths_imported = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "max_depth":
+                        status.max_depth = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "cur_path":
+                        status.cur_path = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "pending_favs":
+                        status.pending_favs = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "pending_total":
+                        status.pending_total = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "variable_paths":
+                        status.variable_paths = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "stability":
+                        status.stability = valuePair[1].Trim();
+                        break;
+                    case "bitmap_cvg":
+                        status.bitmap_cvg = valuePair[1].Trim();
+                        break;
+                    case "unique_crashes":
+                        status.unique_crashes = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "unique_hangs":
+                        status.unique_hangs = int.Parse(valuePair[1].Trim());
+                        break;
+                    case "last_path":
+                        status.last_path = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(int.Parse(valuePair[1].Trim())).ToLocalTime();
+                        break;
+                    case "last_crash":
+                        status.last_crash = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(int.Parse(valuePair[1].Trim())).ToLocalTime();
+                        break;
+                    case "last_hang":
+                        status.last_hang = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(int.Parse(valuePair[1].Trim())).ToLocalTime();
+                        break;
+                    default: break;
                 }
 
-                return targetList;
-
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                return new List<LoggedTarget>();
-            }
-
+            return status;
         }
 
-        private static List<InstrumentedTarget> ParseInstrumentedTargets(Stream stream)
-        {
-            try
-            {
-                // convert stream to string
-                StreamReader reader = new StreamReader(stream);
-                //(cl:\s(?<column>[0-9]+)\s)?fl:\s(?<file>[^""]*)
-                var regex = new Regex(@"(?<id>[0-9]+)\s\sln:\s(?<line>[0-9]+)\s(\scl:\s(?<column>[0-9]+)\s\s)?(?<file>[^""]*)"
-                   , RegexOptions.IgnorePatternWhitespace);
-                var regex2 = new Regex(@"(?<id>[0-9]+)\s:\s(?<days>[0-9]+)\sdays,\s(?<hrs>[0-9]+)\shrs,\s(?<min>[0-9]+)\smin,\s(?<sec>[0-9]+)\ssec\s,\s(?<ms>[0-9]+)\sms\s---\s(?<queue>[0-9]+)\s---\s(?<exec>[^""]*)"
-   , RegexOptions.IgnorePatternWhitespace);
-                var targetList = new List<InstrumentedTarget>();
-                while (!reader.EndOfStream)
-                {
-                    string line = reader.ReadLine().Replace("{", "").Replace("}", "").Trim();
-                    var m = regex.Match(line ?? "");
-                    if (m.Success)
-                    {
-                        targetList.Add(new InstrumentedTarget
-                        {
-                            Id = int.Parse(m.Groups["id"].Value),
-                            Line = int.Parse(m.Groups["line"].Value),
-                            Column = !string.IsNullOrEmpty(m.Groups["column"].Value) ? int.Parse(m.Groups["column"].Value) : 0,
-                            File = m.Groups["file"].Value
-                        });
-                    }else
-                    {
-                        Console.WriteLine("error");
-                    }
-                    
-                }
-                return targetList;
+        //private static List<LoggedCrash> ParseLoggedCrashes(Stream stream)
+        //{
+        //    try
+        //    {
+        //        // convert stream to string
+        //        StreamReader reader = new StreamReader(stream);
+        //        var regex = new Regex(@"(?<id>[0-9]+)\s:\s(?<days>[0-9]+)\sdays,\s(?<hrs>[0-9]+)\shrs,\s(?<min>[0-9]+)\smin,\s(?<sec>[0-9]+)\ssec,\s(?<ms>[0-9]+)\sms\s---\s(?<exec>[0-9k]*)\s---\s\[(?<targets>.*?)\]"
+        //           , RegexOptions.IgnorePatternWhitespace);
+        //        var crashList = new List<LoggedCrash>();
+        //        while (!reader.EndOfStream)
+        //        {                    
+        //            var m = regex.Match(reader.ReadLine()??"");
+        //            if(m.Success) {
+        //                crashList.Add(new LoggedCrash
+        //                {
+        //                    Id = int.Parse(m.Groups["id"].Value),
+        //                    Days = int.Parse(m.Groups["days"].Value),
+        //                    Hours = int.Parse(m.Groups["hrs"].Value),
+        //                    Minutes = int.Parse(m.Groups["min"].Value),
+        //                    Seconds = int.Parse(m.Groups["sec"].Value),
+        //                    MilliSeconds = int.Parse(m.Groups["ms"].Value),
+        //                    Execution = m.Groups["exec"].Value,
+        //                    Targets = m.Groups["targets"].Value.Trim().Split(" ").Where(s => !string.IsNullOrEmpty(s)).Select(s => int.Parse(s)).ToList()
+        //                });
+        //            }                   
 
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                return new List<InstrumentedTarget>();
-            }
+        //        }
 
-        }
+        //        return crashList;
+
+        //    }catch(Exception e)
+        //    {
+        //        Console.WriteLine(e.Message);
+        //        return new List<LoggedCrash>();
+        //    }
+
+        //}
+
+        //private static List<LoggedTarget> ParseLoggedTargets(Stream stream)
+        //{
+        //    try
+        //    {
+        //        // convert stream to string
+        //        StreamReader reader = new StreamReader(stream);
+        //        var regex = new Regex(@"(?<id>[0-9]+)\s:\s(?<days>[0-9]+)\sdays,\s(?<hrs>[0-9]+)\shrs,\s(?<min>[0-9]+)\smin,\s(?<sec>[0-9]+)\ssec\s,\s(?<ms>[0-9]+)\sms\s---\s(?<queue>[0-9]+)\s---\s(?<exec>[^""]*)"
+        //           , RegexOptions.IgnorePatternWhitespace);
+        //        var targetList = new List<LoggedTarget>();
+        //        while (!reader.EndOfStream)
+        //        {
+        //            var m = regex.Match(reader.ReadLine() ?? "");
+        //            if (m.Success)
+        //            {
+        //                targetList.Add(new LoggedTarget
+        //                {
+        //                    Id = int.Parse(m.Groups["id"].Value),
+        //                    Days = int.Parse(m.Groups["days"].Value),
+        //                    Hours = int.Parse(m.Groups["hrs"].Value),
+        //                    Minutes = int.Parse(m.Groups["min"].Value),
+        //                    Seconds = int.Parse(m.Groups["sec"].Value),
+        //                    Queue = int.Parse(m.Groups["queue"].Value),
+        //                    Execution = m.Groups["exec"].Value
+        //                });
+        //            }
+
+        //        }
+
+        //        return targetList;
+
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Console.WriteLine(e.Message);
+        //        return new List<LoggedTarget>();
+        //    }
+
+        //}
+
+        //     private static List<InstrumentedTarget> ParseInstrumentedTargets(Stream stream)
+        //     {
+        //         try
+        //         {
+        //             // convert stream to string
+        //             StreamReader reader = new StreamReader(stream);
+        //             //(cl:\s(?<column>[0-9]+)\s)?fl:\s(?<file>[^""]*)
+        //             var regex = new Regex(@"(?<id>[0-9]+)\s\sln:\s(?<line>[0-9]+)\s(\scl:\s(?<column>[0-9]+)\s\s)?(?<file>[^""]*)"
+        //                , RegexOptions.IgnorePatternWhitespace);
+        //             var regex2 = new Regex(@"(?<id>[0-9]+)\s:\s(?<days>[0-9]+)\sdays,\s(?<hrs>[0-9]+)\shrs,\s(?<min>[0-9]+)\smin,\s(?<sec>[0-9]+)\ssec\s,\s(?<ms>[0-9]+)\sms\s---\s(?<queue>[0-9]+)\s---\s(?<exec>[^""]*)"
+        //, RegexOptions.IgnorePatternWhitespace);
+        //             var targetList = new List<InstrumentedTarget>();
+        //             while (!reader.EndOfStream)
+        //             {
+        //                 string line = reader.ReadLine().Replace("{", "").Replace("}", "").Trim();
+        //                 var m = regex.Match(line ?? "");
+        //                 if (m.Success)
+        //                 {
+        //                     targetList.Add(new InstrumentedTarget
+        //                     {
+        //                         Id = int.Parse(m.Groups["id"].Value),
+        //                         Line = int.Parse(m.Groups["line"].Value),
+        //                         Column = !string.IsNullOrEmpty(m.Groups["column"].Value) ? int.Parse(m.Groups["column"].Value) : 0,
+        //                         File = m.Groups["file"].Value
+        //                     });
+        //                 }else
+        //                 {
+        //                     Console.WriteLine("error");
+        //                 }
+
+        //             }
+        //             return targetList;
+
+        //         }
+        //         catch (Exception e)
+        //         {
+        //             Console.WriteLine(e.Message);
+        //             return new List<InstrumentedTarget>();
+        //         }
+
+        //     }
     }
 
    

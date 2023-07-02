@@ -17,8 +17,8 @@
         <div class="col-6">
     <table class="table">
         <tbody>
-    <tr><td>start_time      </td><td>@Model.FuzzingStatus.start_time.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
-    <tr><td>last_update    </td><td>@Model.FuzzingStatus.last_update.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
+    <tr><td>start_time      </td><td>@Model.FuzzingStatus.start_time.ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
+    <tr><td>last_update    </td><td>@Model.FuzzingStatus.last_update.ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
     <tr><td>fuzzer_pid     </td><td>@Model.FuzzingStatus.fuzzer_pid</td></tr>
     <tr><td>cycles_done    </td><td>@Model.FuzzingStatus.cycles_done</td></tr>
     <tr><td>execs_done     </td><td>@Model.FuzzingStatus.execs_done</td></tr>
@@ -36,9 +36,9 @@
     <tr><td>bitmap_cvg     </td><td>@Model.FuzzingStatus.bitmap_cvg</td></tr>
     <tr><td>unique_crashes </td><td>@Model.FuzzingStatus.unique_crashes</td></tr>
     <tr><td>unique_hangs   </td><td>@Model.FuzzingStatus.unique_hangs</td></tr>
-    <tr><td>last_path      </td><td>@Model.FuzzingStatus.last_path.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
-    <tr><td>last_crash     </td><td>@Model.FuzzingStatus.last_crash.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
-    <tr><td>last_hang       </td><td>@Model.FuzzingStatus.last_hang.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
+    <tr><td>last_path      </td><td>@Model.FuzzingStatus.last_path.ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
+    <tr><td>last_crash     </td><td>@Model.FuzzingStatus.last_crash.ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
+    <tr><td>last_hang       </td><td>@Model.FuzzingStatus.last_hang.ToString("dd.MM.yyyy HH:mm:ss")</td></tr>
         </tbody>
     </table>
         </div>

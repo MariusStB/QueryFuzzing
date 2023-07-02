@@ -8,6 +8,8 @@ namespace QueryFuzzing.Joern.Models
         [JsonPropertyName("_1")]
         public int LineNumber { get; set; }
         [JsonPropertyName("_2")]
-        public string Filename { get; set; }
+        public string Path { get; set; }
+        [JsonPropertyName("_3")]
+        public string Methodname { get; set; }
     }
 }

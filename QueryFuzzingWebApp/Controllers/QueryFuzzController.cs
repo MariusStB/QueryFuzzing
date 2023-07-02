@@ -64,7 +64,9 @@ namespace QueryFuzzingWebApp.Controllers
             inst.SelectedExecutable = _db.Executables.Single(e => e.Id == model.SelectedExecutable);
             inst.InstanceTargets = _db.ProjectTargets.Where(t => model.Targets.Contains(t.Id)).Select(t => new InstanceTarget {
                     File= t.File,
+                    Path = t.Path,
                     Line= t.Line,
+                    Methodname = t.Methodname,
                 }).ToList();
 
             _db.FuzzingInstance.Update(inst);

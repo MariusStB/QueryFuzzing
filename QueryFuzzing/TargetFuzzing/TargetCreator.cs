@@ -10,15 +10,15 @@ namespace QueryFuzzing.TargetFuzzing
         {
             var sb = new StringBuilder();
             byte[] buffer = new byte[10*1024];
-            foreach (var match in matches.GroupBy(m => new {m.LineNumber, m.Filename}).Select(m => m.First()).OrderBy(o=> o.Filename))
+            foreach (var match in matches.GroupBy(m => new {m.LineNumber, m.Path}).Select(m => m.First()).OrderBy(o=> o.Path))
             {
                 if(excludeTest)
                 {
-                    if (match.Filename.Contains("test")) { 
+                    if (match.Path.Contains("test")) { 
                         continue; 
                     }
                 }
-                sb.AppendLine($"{match.Filename}:{match.LineNumber}");
+                sb.AppendLine($"{match.Path}:{match.LineNumber}");
             }
 
             using (var ms = new MemoryStream())
@@ -34,13 +34,7 @@ namespace QueryFuzzing.TargetFuzzing
 
                     return ms.ToArray();
                 }
-            }
-
-            //using (var sw = new StreamWriter(path))
-            //{
-            //    sw.Write(sb.ToString());
-            //    return sw.ToArray();
-            //}
+            }           
         }
     }
 }

@@ -7,11 +7,18 @@
 
 <div class="text-center">
     <h1 class="display-4">Project</h1>
-    <p>@Model.Name</p>
-    <p>@Model.Path</p>
-    <p>@Model.Language</p>
-    <p>@Model.Tag</p>
-    <p>@Model.CreatedDate.ToString("dd.MM.yyyy HH:mm:ss")</p>
+    <div class="row">
+    <div class="col-3"></div>
+    <div class="col-6 text-start">
+        <p>Name: @Model.Name</p>
+        <p>Path: @Model.Path</p>
+        <p>Language: @Model.Language</p>
+        <p>Tag: @Model.Tag</p>
+        <p>Created on: @Model.CreatedDate.ToString("dd.MM.yyyy HH:mm:ss")</p>
+        <p>Querytime: @Model.QueryTime.ToString(@"hh\:mm\:ss")</p>
+    </div>
+    <div class="col-3"></div>
+    </div>
 </div>
 <a href="CreateFuzzingInstance?projectId=@Model.Id" role="button" class="btn btn-primary">Create Instance</a>
 <div class="text-center">
