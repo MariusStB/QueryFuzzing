@@ -10,6 +10,7 @@ using System.IO.Compression;
 using LoggedTarget = QueryFuzzing.Windranger.Models.LoggedTarget;
 using System.Text;
 using QueryFuzzing.Valgrind;
+using QueryFuzzing.Models;
 
 namespace QueryFuzzingWebApp.Services
 {
@@ -44,13 +45,13 @@ namespace QueryFuzzingWebApp.Services
                     var matchList = new List<ProjectTarget>();
                     foreach (var query in queries)
                     {
-                        var queryResult = await _joernService.SendQuery(query);
+                        var queryResult = await _joernService.SendQuery(query.Traversal);
                         if (queryResult.Any(r => !string.IsNullOrEmpty(r)))
                         {
                            int c = queryResult.Count();
                             foreach (var r in queryResult)
                             {
-                                matchList.AddRange(QueryListParser.ParseCallList(r).Select(m => new ProjectTarget { File = Path.GetFileName(m.Path), Path = m.Path, Line = m.LineNumber, Methodname = m.Methodname}));
+                                matchList.AddRange(QueryListParser.ParseCallList(r).Select(m => new ProjectTarget { File = Path.GetFileName(m.Path), Path = m.Path, Line = m.LineNumber, Methodname = m.Methodname, QueryDescription = query.Description}));
                             }
                         }
 
@@ -177,7 +178,7 @@ namespace QueryFuzzingWebApp.Services
         {
             try
             {
-                var inst = await _db.FuzzingInstance.Include(i=> i.FinalStats).Include(i => i.SelectedExecutable).Include(i => i.Project).Include(i=> i.InstanceTargets).Include(i => i.Crashes).ThenInclude(c => c.CrashedTargets).SingleOrDefaultAsync(i => i.Id == instanceId);
+                var inst = await _db.FuzzingInstance.Include(i=> i.FinalStats).Include(i => i.SelectedExecutable).Include(i => i.Project).Include(i=> i.InstanceTargets).Include(i => i.Crashes).ThenInclude(c => c.Stacktrace).Include(i => i.Crashes).ThenInclude(c => c.CrashedTargets).SingleOrDefaultAsync(i => i.Id == instanceId);
                 if (inst == null)
                 {
                     throw new Exception();
@@ -187,6 +188,7 @@ namespace QueryFuzzingWebApp.Services
                 {
                     var result = new FuzzingResult
                     {
+                       FalsePositives = inst.InstanceTargets.Where(it => !it.Crashed).ToList(),
                         Crashes = inst.Crashes.ToList(),
                         Status = inst.FinalStats
                     };
@@ -249,63 +251,54 @@ namespace QueryFuzzingWebApp.Services
                 }
 
                 DockerExecuter.ExecDockerCommand($"stop {dockername}");
-
                 inst.EndTime = DateTime.Now;
                 _db.FuzzingInstance.Update(inst);
                 await _db.SaveChangesAsync();
-                int exactTarget = 0;
-                int methodTarget = 0;
-                foreach(var crash in valgrindErrorList.OrderBy(v =>  v.FuzzingCrashTime))
+                foreach(var crash in valgrindErrorList.Distinct().OrderBy(v =>  v.FuzzingCrashTime))
                 {
+                    var dbCrash = new Crash
+                    {
+                        FuzzingInstanceId = inst.Id,
+                        CrashTime = crash.FuzzingCrashTime,
+                        Description = crash.ErrorMessage,
+                        Stacktrace = crash.Stacktrace.Select(s => new Stacktrace { LineNumber = s.LineNumber, Method = s.Method, ClassName = s.ClassName, GlobalLib = s.GlobalLib }).ToList()
+                    };
+                    var crashedTargets = new List<CrashedTarget>();
                     foreach(var trace in crash.Stacktrace.Where(s => !s.GlobalLib).OrderBy(s=> s.Id))
                     {
-                        var crashedTarged = inst.InstanceTargets.Where(t => t.File == trace.ClassName && t.Methodname == trace.Method && t.Line == trace.LineNumber).ToList();
-                        if (crashedTarged.Any())
+                        var crashedTarget = inst.InstanceTargets.Where(t => t.File == trace.ClassName && t.Methodname == trace.Method && t.Line == trace.LineNumber).ToList();
+                        if (crashedTarget.Any())
                         {
-                            exactTarget++;
+                            _db.UpdateRange(crashedTarget.Select(c => { c.Crashed = true; return c; }).ToList());
+                            await _db.SaveChangesAsync();
+                            crashedTargets.AddRange(crashedTarget.Select(c => new CrashedTarget { Line = c.Line, Methodname = c.Methodname, File = c.File, QueryDescription = c.QueryDescription, Path = c.Path, MatchAccuracy = MatchAccuracy.Line }));
                         }else
                         {
                             var methodCrash = inst.InstanceTargets.Where(t => t.File == trace.ClassName && t.Methodname == trace.Method).ToList();
                             if (methodCrash.Any())
                             {
-                                methodTarget++;
+                                _db.UpdateRange(crashedTarget.Select(c => { c.Crashed = true; return c; }).ToList());
+                                await _db.SaveChangesAsync(); crashedTargets.AddRange(crashedTarget.Select(c => new CrashedTarget { Line = 0,Methodname = c.Methodname, File = c.File, QueryDescription = c.QueryDescription, Path = c.Path, MatchAccuracy = MatchAccuracy.Method }));
                             }
                         }
                     }
-                }
+                    dbCrash.CrashedTargets = crashedTargets;
 
+                    _db.Crash.Add(dbCrash);
+                    await _db.SaveChangesAsync();
+                }                
 
-                //foreach (var crash in loggedCrashes)
-                //{
-                //    var crashedTargets = new List<CrashedTarget>();
-                //    foreach (var target in crash.Targets)
-                //    {
-                //        var instrumendetTarget = instrumentedTargets.SingleOrDefault(t => t.Id == target);
-                //        if (instrumendetTarget != null)
-                //        {
-                //            crashedTargets.Add(new CrashedTarget
-                //            {
-                //                File = instrumendetTarget.File,
-                //                Line = instrumendetTarget.Line,
-                //                Column = instrumendetTarget.Column
-                //            });
-                //        }
-                //    }
-                //    await _db.Crash.AddAsync(new Crash
-                //    {
-                //        FuzzingInstanceId = instanceId,
-                //        CrashTime = new TimeSpan(crash.Days, crash.Hours, crash.Minutes, crash.Seconds, crash.MilliSeconds),
-                //        CrashedTargets = crashedTargets
-                //    });
-                //    await _db.SaveChangesAsync();
-                //}
-
+                fuzzingResult.FalsePositives = inst.InstanceTargets.Where(it => !it.Crashed).ToList();
                 fuzzingResult.Crashes = _db.Crash.Include(c => c.CrashedTargets).Where(c => c.FuzzingInstanceId == instanceId).ToList();
                 return fuzzingResult;
             }
             catch(Exception ex)
             {
-                return null;
+                return new FuzzingResult {
+                    Crashes = new List<Crash>(),
+                    FalsePositives = new List<InstanceTarget>(),
+                    Status = new FuzzingStat()
+                };  
             }
         }
 

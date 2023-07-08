@@ -66,6 +66,10 @@ namespace QueryFuzzingWebApp.Database
                 .HasForeignKey(e => e.CrashId)
                 .HasPrincipalKey(e => e.Id);
 
+            modelBuilder.Entity<Crash>().HasMany(e => e.Stacktrace).WithOne(e => e.Crash)
+                .HasForeignKey(e => e.CrashId)
+                .HasPrincipalKey(e => e.Id);
+
             modelBuilder.Entity<FuzzingInstance>().HasOne(e => e.FinalStats).WithOne(e => e.FuzzingInstance)
                 .HasForeignKey<FuzzingStat>(e => e.FuzzingInstanceId);
 

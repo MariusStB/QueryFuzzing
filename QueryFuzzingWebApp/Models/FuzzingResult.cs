@@ -7,5 +7,6 @@ namespace QueryFuzzingWebApp.Models
         public FuzzingStat Status { get; set; }
 
         public List<Crash> Crashes { get; set; }  
+        public List<InstanceTarget> FalsePositives { get; set; }
     }
 }

@@ -12,7 +12,7 @@ namespace QueryFuzzing.Joern
             _joernClient = joernClient;
         }
 
-        public async Task<List<string>> GetQueryDbItems(Language language, Tag tag)
+        public async Task<List<Query>> GetQueryDbItems(Language language, Tag tag)
         {
             try
             {
@@ -30,12 +30,12 @@ namespace QueryFuzzing.Joern
                     querydbItems = querydbItems.Where(q => q.Tags.Contains(tag.ToString())).ToList();
                 }
 
-                var queryList = querydbItems.Select(q => $"({{{q.TraversalAsString.Replace("cpg =>\n", "").Trim()}}}).map(c => (c.lineNumber.get, c.location.filename, c.location.methodFullName)).toJson").ToList();
+                var queryList = querydbItems.Select(q => new Query { Description = q.Title, Traversal = $"({{{q.TraversalAsString.Replace("cpg =>\n", "").Trim()}}}).map(c => (c.lineNumber.get, c.location.filename, c.location.methodFullName)).toJson" }).ToList();
                 //var queryList = querydbItems.Select(q => $"({{{q.TraversalAsString.Replace("cpg =>\n", "").Trim()}}}).l").ToList();
                 return queryList;
             }catch(Exception ex)
             {
-                return new List<string>();
+                return new List<Query>();
             }
             
         }

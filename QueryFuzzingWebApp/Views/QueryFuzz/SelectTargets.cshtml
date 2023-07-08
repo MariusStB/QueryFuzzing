@@ -24,7 +24,7 @@
         <select asp-for="Targets" name="Targets" class="form-control" id="targets" size="50" style="height: 50%" multiple>
             @foreach (ProjectTarget target in Model.Project.Targets.OrderBy(t => t.File))
             {
-                <option value="@target.Id">@($"{target.File}:{target.Line}")</option>
+                <option value="@target.Id">@($"{target.File}:{target.Line} ({target.QueryDescription})")</option>
             }  
         </select>
     </div>

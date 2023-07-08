@@ -1,9 +1,10 @@
-﻿namespace QueryFuzzingWebApp.Database.Models
+﻿using QueryFuzzing.Models;
+
+namespace QueryFuzzingWebApp.Database.Models
 {
     public class CrashedTarget : Target
     {
-        public int Column { get; set; }
-
+        public MatchAccuracy MatchAccuracy { get; set; }
         public int CrashId { get; set; }
         public Crash Crash { get; set; }
     }

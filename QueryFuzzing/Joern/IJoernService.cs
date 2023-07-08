@@ -9,6 +9,6 @@ namespace QueryFuzzing.Joern
 
         Task<List<string>> SendQuery(string query);
 
-        Task<List<string>> GetQueryDbItems(Language language, Tag tag);
+        Task<List<Query>> GetQueryDbItems(Language language, Tag tag);
     }
 }

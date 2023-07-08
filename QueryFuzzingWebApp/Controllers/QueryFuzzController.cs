@@ -67,6 +67,7 @@ namespace QueryFuzzingWebApp.Controllers
                     Path = t.Path,
                     Line= t.Line,
                     Methodname = t.Methodname,
+                    QueryDescription= t.QueryDescription,
                 }).ToList();
 
             _db.FuzzingInstance.Update(inst);
@@ -106,7 +107,10 @@ namespace QueryFuzzingWebApp.Controllers
             {
                 return View("Index");
             }
-
+            if(inst.EndTime> inst.StartTime)
+            {
+                return RedirectToAction("Finish", new { instanceId = instanceId });
+            }
             var status = await _queryFuzzService.GetFuzzingStatus(instanceId);
             var model = new QueryFuzzStatusModel
             {
@@ -124,6 +128,11 @@ namespace QueryFuzzingWebApp.Controllers
             if (inst == null)
             {
                 return View("Index");
+            }
+
+            if(inst.EndTime >inst.StartTime)
+            {
+
             }
             
             var result = await _queryFuzzService.FinishFuzzing(instanceId);
