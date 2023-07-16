@@ -4,6 +4,7 @@ using QueryFuzzingWebApp.Models;
 using QueryFuzzingWebApp.Database;
 using Microsoft.EntityFrameworkCore;
 using QueryFuzzingWebApp.Database.Models;
+using System.Runtime.CompilerServices;
 
 namespace QueryFuzzingWebApp.Controllers
 {
@@ -109,7 +110,13 @@ namespace QueryFuzzingWebApp.Controllers
             }
             if(inst.EndTime> inst.StartTime)
             {
-                return RedirectToAction("Finish", new { instanceId = instanceId });
+                var stats = await _db.FuzzingStats.SingleOrDefaultAsync(s => s.Id == inst.FinalStatId);
+                return View(new QueryFuzzStatusModel
+                {
+                    Project= inst.Project,
+                    SelectedInstance=inst.Id,
+                    FuzzingStatus = stats
+                });
             }
             var status = await _queryFuzzService.GetFuzzingStatus(instanceId);
             var model = new QueryFuzzStatusModel
@@ -128,12 +135,7 @@ namespace QueryFuzzingWebApp.Controllers
             if (inst == null)
             {
                 return View("Index");
-            }
-
-            if(inst.EndTime >inst.StartTime)
-            {
-
-            }
+            }           
             
             var result = await _queryFuzzService.FinishFuzzing(instanceId);
             var model = new QueryFuzzResultModel

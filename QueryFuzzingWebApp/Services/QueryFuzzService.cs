@@ -5,12 +5,11 @@ using QueryFuzzingWebApp.Database.Models;
 using QueryFuzzing.Windranger;
 using QueryFuzzing.Windranger.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
 using System.IO.Compression;
 using LoggedTarget = QueryFuzzing.Windranger.Models.LoggedTarget;
-using System.Text;
 using QueryFuzzing.Valgrind;
 using QueryFuzzing.Models;
+using QueryFuzzing.Valgrind.Models;
 
 namespace QueryFuzzingWebApp.Services
 {
@@ -59,7 +58,7 @@ namespace QueryFuzzingWebApp.Services
 
                     var p = await _db.AddAsync(new Project
                     {
-                        Name = model.ProjectName,
+                        Name = model.ProjectName.Replace(" ", "_"),
                         Path = model.ProjectPath,
                         CreatedDate = startDate,
                         QueryTime = DateTime.Now.Subtract(startDate),
@@ -83,47 +82,54 @@ namespace QueryFuzzingWebApp.Services
 
         public async Task<FuzzingInstance> PrepareFuzzing(int projectId)
         {
-            var project = await _db.Projects.SingleOrDefaultAsync(p => p.Id== projectId);
-            if(project == null)
+            _logger.LogInformation("Prepare Fuzzing");
+
+            try
             {
-                return null;
-            }
+                var project = await _db.Projects.SingleOrDefaultAsync(p => p.Id == projectId);
+                if (project == null)
+                {
+                    return null;
+                }
 
-            var inst = await _db.FuzzingInstance.AddAsync(new FuzzingInstance
+                var inst = await _db.FuzzingInstance.AddAsync(new FuzzingInstance
+                {
+                    ProjectId = projectId,
+                    CreateDate = DateTime.Now,
+
+                });
+                await _db.SaveChangesAsync();
+                string dockername = $"{project.Name}_{inst.Entity.Id}_{inst.Entity.CreateDate:ddMMyyyyHHmmss}";
+                var lastFolderName = Path.GetFileName(
+                        project.Path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+
+                List<string> output;
+                _logger.LogInformation("Starting Docker");
+                //Create Docker
+                output = DockerExecuter.ExecDockerCommand($"run -itd --name {dockername} ardu/windranger", 12000);
+                output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"apt-get update\"");
+                output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"apt-get install valgrind\"");
+              
+                //output = DockerExecuter.ExecDockerCommand($"cp Ressources/afl-fuzz.c {dockername}:/home/SVF-tools/windranger/fuzz");
+                //output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"cd /home/SVF-tools/windranger/fuzz;make \"", 12000);
+
+                //Create Folder
+                output = DockerExecuter.ExecDockerCommand($"exec {dockername} mkdir /home/SVF-tools/fuzzing");
+                //Copy Project to Docker
+                output = DockerExecuter.ExecDockerCommand($"cp {project.Path} {dockername}:/home/SVF-tools/fuzzing");
+                output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"/home/SVF-tools/fuzzing/{lastFolderName}/prepare.sh \"");
+                output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"find /home/SVF-tools/fuzzing/{lastFolderName}/build -executable -type f\"");
+                var executables = GetExecutables(inst.Entity.Id, lastFolderName, output);
+
+                await _db.Executables.AddRangeAsync(executables);
+                await _db.SaveChangesAsync();
+
+                return inst.Entity;
+            } catch(Exception e)
             {
-                ProjectId = projectId,
-                CreateDate = DateTime.Now,
-
-            });
-            await _db.SaveChangesAsync();
-            string dockername = $"{project.Name}_{inst.Entity.Id}_{inst.Entity.CreateDate:ddMMyyyyHHmmss}";
-            var lastFolderName = Path.GetFileName(
-                    project.Path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-
-            List<string> output;
-            //Create Docker
-            output = DockerExecuter.ExecDockerCommand($"run --name {dockername} -it ardu/windranger", 12000);
-            output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"apt-get update\"");
-            output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"apt-get install valgrind\"");
-            //output = DockerExecuter.ExecDockerCommand($"cp Ressources/afl-fuzz.c {dockername}:/home/SVF-tools/windranger/fuzz");
-            //output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"cd /home/SVF-tools/windranger/fuzz;make \"", 12000);
-
-
-
-            //Create Folder
-            output = DockerExecuter.ExecDockerCommand($"exec {dockername} mkdir /home/SVF-tools/fuzzing");
-            //Copy Project to Docker
-            output = DockerExecuter.ExecDockerCommand($"cp {project.Path} {dockername}:/home/SVF-tools/fuzzing");
-            output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"/home/SVF-tools/fuzzing/{lastFolderName}/prepare.sh \"");
-            output = DockerExecuter.ExecDockerCommand($"exec {dockername} bash -c \"find /home/SVF-tools/fuzzing/{lastFolderName}/build -executable -type f\"");
-            var executables = GetExecutables(inst.Entity.Id,lastFolderName, output);
-
-            await _db.Executables.AddRangeAsync(executables);
-            await _db.SaveChangesAsync();
-           
-
-
-            return inst.Entity;            
+                _logger.LogError(e.StackTrace);
+                throw;
+            }     
 
         }
 
@@ -254,7 +260,9 @@ namespace QueryFuzzingWebApp.Services
                 inst.EndTime = DateTime.Now;
                 _db.FuzzingInstance.Update(inst);
                 await _db.SaveChangesAsync();
-                foreach(var crash in valgrindErrorList.Distinct().OrderBy(v =>  v.FuzzingCrashTime))
+                var valgrindEqual = new ValgrindErrorEquals();
+
+                foreach (var crash in valgrindErrorList.Distinct(valgrindEqual).OrderBy(v =>  v.FuzzingCrashTime))
                 {
                     var dbCrash = new Crash
                     {

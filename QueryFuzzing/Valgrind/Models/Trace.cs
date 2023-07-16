@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace QueryFuzzing.Valgrind.Models
 {
     public class Trace
@@ -13,5 +8,6 @@ namespace QueryFuzzing.Valgrind.Models
         public string ClassName { get; set; }
         public string Method { get; set; }
         public int LineNumber { get; set; }
+        
     }
 }

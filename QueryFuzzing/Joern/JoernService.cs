@@ -1,4 +1,5 @@
-﻿using QueryFuzzing.Joern.Models;
+﻿using Microsoft.Extensions.Logging;
+using QueryFuzzing.Joern.Models;
 using System.Text.Json;
 
 namespace QueryFuzzing.Joern
@@ -6,10 +7,12 @@ namespace QueryFuzzing.Joern
     public class JoernService : IJoernService
     {
         private readonly IJoernClient _joernClient;
+        private readonly ILogger<JoernService> _logger;
 
-        public JoernService(IJoernClient joernClient)
+        public JoernService(IJoernClient joernClient, ILogger<JoernService> logger)
         {
             _joernClient = joernClient;
+            _logger = logger;
         }
 
         public async Task<List<Query>> GetQueryDbItems(Language language, Tag tag)
@@ -35,6 +38,7 @@ namespace QueryFuzzing.Joern
                 return queryList;
             }catch(Exception ex)
             {
+                _logger.LogError(ex.StackTrace);
                 return new List<Query>();
             }
             
@@ -44,9 +48,7 @@ namespace QueryFuzzing.Joern
         {
             try
             {
-#if(false)
-                return true;
-#endif
+
                 var queryResponse = await _joernClient.SubmitQuery(new Models.QueryRequest { 
                     Query = $"importCode(inputPath=\"{projectPath}\", projectName=\"{projectName}\")" 
                 });
@@ -65,6 +67,7 @@ namespace QueryFuzzing.Joern
                 return resultResponse.Success;
             }
             catch(Exception ex) {
+               _logger.LogError(ex.StackTrace);
                 return false;
             }
         }
@@ -92,7 +95,7 @@ namespace QueryFuzzing.Joern
 
             }
             catch (Exception ex) {
-                Console.WriteLine(ex.Message);
+                _logger.LogError(ex.StackTrace);
                 return null;
             }
         }

@@ -12,6 +12,7 @@ namespace QueryFuzzingWebApp.Database
         public DbSet<Executable> Executables { get; set; }
         public DbSet<Crash> Crash { get; set; }
         public DbSet<CrashedTarget> CrashedTargets { get; set; }
+        public DbSet<FuzzingStat> FuzzingStats { get; set; }
 
         public QueryFuzzContext()
         {

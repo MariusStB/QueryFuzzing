@@ -1,4 +1,5 @@
 ﻿using QueryFuzzing.Valgrind.Models;
+using System.Net.Sockets;
 using System.Text.RegularExpressions;
 
 namespace QueryFuzzing.Valgrind
@@ -70,8 +71,10 @@ namespace QueryFuzzing.Valgrind
                         }
                         else
                         {
+                            line = traceLine;
                             break;
                         }
+                        
                     }
 
                     valgrindErrorList.Add(new ValgrindError

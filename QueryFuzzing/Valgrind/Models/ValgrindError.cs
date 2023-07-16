@@ -11,7 +11,6 @@ namespace QueryFuzzing.Valgrind.Models
     {
         public string ErrorMessage { get; set; }
         public TimeSpan FuzzingCrashTime { get; set; }
-        public List<Trace> Stacktrace { get; set; }
-
+        public List<Trace> Stacktrace { get; set; }       
     }
 }

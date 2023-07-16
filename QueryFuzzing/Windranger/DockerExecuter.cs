@@ -8,40 +8,48 @@ namespace QueryFuzzing.Windranger
         private static List<string> s_output = new List<string>();
         public static List<string> ExecDockerCommand(string command, int timeout = 0)
         {
-            s_output.Clear();
-            var processInfo = new ProcessStartInfo("docker", command);
-
-            processInfo.UseShellExecute = false;
-            processInfo.RedirectStandardOutput = true;
-            processInfo.RedirectStandardError = true;
-            int exitCode;
-            using (var process = new Process())
+            try
             {
-                process.StartInfo = processInfo;
+                s_output.Clear();
+                var processInfo = new ProcessStartInfo("docker", command);
 
-                process.OutputDataReceived += new DataReceivedEventHandler(Output);
-                process.ErrorDataReceived += new DataReceivedEventHandler(Log);
+                processInfo.UseShellExecute = false;
+                processInfo.RedirectStandardOutput = true;
+                processInfo.RedirectStandardError = true;
+                int exitCode;
+                using (var process = new Process())
+                {
+                    process.StartInfo = processInfo;
 
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                if(timeout!=0)
-                {
-                    process.WaitForExit(timeout);
-                }else
-                {
-                    process.WaitForExit();
+                    process.OutputDataReceived += new DataReceivedEventHandler(Output);
+                    process.ErrorDataReceived += new DataReceivedEventHandler(Log);
+
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    if (timeout != 0)
+                    {
+                        process.WaitForExit(timeout);
+                    }
+                    else
+                    {
+                        process.WaitForExit();
+                    }
+                    if (!process.HasExited)
+                    {
+                        process.Kill();
+                    }
+
+                    exitCode = process.ExitCode;
+                    process.Close();
                 }
-                if (!process.HasExited)
-                {
-                    process.Kill();
-                }
 
-                exitCode = process.ExitCode;
-                process.Close();
+                return s_output;
             }
-           
-            return s_output;
+            catch (Exception e)
+            {
+                return new List<string>() { e.Message };
+            }
             
         }
 
@@ -56,7 +64,7 @@ namespace QueryFuzzing.Windranger
         private static void Log(object sender, DataReceivedEventArgs e)
         {
 
-            Console.Write($"{e.Data}{Environment.NewLine}");
+            
 
         }
 
