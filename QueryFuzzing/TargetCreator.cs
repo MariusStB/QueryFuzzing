@@ -1,7 +1,7 @@
 ﻿using QueryFuzzingWebApp.Database.Models;
 using System.Text;
 
-namespace QueryFuzzingWebApp.Services
+namespace QueryFuzzing
 {
     public class TargetCreator
     {
@@ -11,7 +11,7 @@ namespace QueryFuzzingWebApp.Services
             byte[] buffer = new byte[10 * 1024];
             foreach (var target in targets.GroupBy(m => new { m.Line, m.File }).Select(m => m.First()).OrderBy(o => o.File))
             {
-                
+
                 sb.AppendLine($"{target.File}:{target.Line}");
             }
 
@@ -28,7 +28,7 @@ namespace QueryFuzzingWebApp.Services
 
                     return;
                 }
-            }            
+            }
         }
     }
 }

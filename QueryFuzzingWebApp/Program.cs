@@ -1,11 +1,12 @@
 using Microsoft.Extensions.Hosting;
 using NLog;
 using NLog.Web;
+using QueryFuzzing;
 using QueryFuzzing.Joern;
 using QueryFuzzing.Models;
 using QueryFuzzing.Valgrind;
+using QueryFuzzing.Windranger;
 using QueryFuzzingWebApp.Database;
-using QueryFuzzingWebApp.Services;
 
 
 var logger = LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
@@ -19,7 +20,7 @@ try
        builder.Services.AddControllersWithViews();
        builder.Services.AddTransient<IJoernService, JoernService>();
        builder.Services.AddTransient<IJoernClient, JoernClient>();
-       builder.Services.AddTransient<IQueryFuzzService, QueryFuzzService>();
+       builder.Services.AddTransient<IQueryFuzzService, WindrangerService>();
        builder.Services.AddTransient<IValgrindService, ValgrindService>();
        builder.Services.AddEntityFrameworkSqlite().AddDbContext<QueryFuzzContext>();
        builder.Services.AddHttpClient("joernServer", c => c.BaseAddress = new Uri(settings.JoernHost));

@@ -1,8 +1,7 @@
 ﻿using QueryFuzzing.Models;
 using QueryFuzzingWebApp.Database.Models;
-using QueryFuzzingWebApp.Models;
 
-namespace QueryFuzzingWebApp.Services
+namespace QueryFuzzing
 {
     public interface IQueryFuzzService
     {

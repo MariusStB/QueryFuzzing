@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using QueryFuzzingWebApp.Services;
-using QueryFuzzingWebApp.Models;
 using QueryFuzzingWebApp.Database;
 using Microsoft.EntityFrameworkCore;
 using QueryFuzzingWebApp.Database.Models;
 using System.Runtime.CompilerServices;
+using QueryFuzzing;
+using QueryFuzzing.Models;
+using QueryFuzzingWebApp.Models;
 
 namespace QueryFuzzingWebApp.Controllers
 {
@@ -38,7 +39,7 @@ namespace QueryFuzzingWebApp.Controllers
             var project = await _queryFuzzService.ExecuteQueryAnalysis(model);
             if(project == null)
             {
-                return View("Index");
+                return RedirectToAction("Index");
             }
             return View("Targets", project);
         }
@@ -48,7 +49,7 @@ namespace QueryFuzzingWebApp.Controllers
             var project = await _db.Projects.Include(p => p.Targets).SingleOrDefaultAsync(p => p.Id == projectId);
             if (project == null)
             {
-                return View("Index");
+                return RedirectToAction("Index");
             }
             return View(project);
         }
@@ -59,7 +60,7 @@ namespace QueryFuzzingWebApp.Controllers
             var inst = await _db.FuzzingInstance.SingleOrDefaultAsync(i => i.Id == model.SelectedInstance);
             if(inst == null)
             {
-                return View("Index");
+                return RedirectToAction("Index");
             }
 
             inst.SelectedExecutable = _db.Executables.Single(e => e.Id == model.SelectedExecutable);
@@ -94,7 +95,7 @@ namespace QueryFuzzingWebApp.Controllers
             var project = await _db.Projects.Include(p => p.FuzzingInstance).ThenInclude(i => i.InstanceTargets).SingleOrDefaultAsync(p => p.Id == projectId);
             if(project == null)
             {
-                return View("Index");
+                return RedirectToAction("Index");
             }
 
             return View(project);
@@ -106,9 +107,9 @@ namespace QueryFuzzingWebApp.Controllers
             var inst = await _db.FuzzingInstance.Include(i => i.Project).SingleOrDefaultAsync(i => i.Id == instanceId);
             if (inst == null)
             {
-                return View("Index");
+                return RedirectToAction("Index");
             }
-            if(inst.EndTime> inst.StartTime)
+            if (inst.EndTime> inst.StartTime)
             {
                 var stats = await _db.FuzzingStats.SingleOrDefaultAsync(s => s.Id == inst.FinalStatId);
                 return View(new QueryFuzzStatusModel
@@ -129,14 +130,40 @@ namespace QueryFuzzingWebApp.Controllers
             return View(model);
         }
 
+        public async Task<IActionResult> DeleteProject(int projectId)
+        {
+            var project = await _db.Projects.SingleOrDefaultAsync(i => i.Id == projectId);
+            if (project == null)
+            {
+                return RedirectToAction("Index");
+            }
+
+            _db.Remove<Project>(project);
+            await _db.SaveChangesAsync();
+            return RedirectToAction("Index");
+        }
+
+        public async Task<IActionResult> DeleteInstance(int instanceId)
+        {
+            var inst = await _db.FuzzingInstance.SingleOrDefaultAsync(i => i.Id == instanceId);
+            if (inst == null)
+            {
+                return RedirectToAction("Index");
+            }
+
+            _db.Remove<FuzzingInstance>(inst);
+            await _db.SaveChangesAsync();
+            return RedirectToAction("Index");
+        }
+
         public async Task<IActionResult> Finish(int instanceId)
         {
             var inst = await _db.FuzzingInstance.Include(i => i.Project).SingleOrDefaultAsync(i => i.Id == instanceId);
             if (inst == null)
             {
-                return View("Index");
-            }           
-            
+                return RedirectToAction("Index");
+            }
+
             var result = await _queryFuzzService.FinishFuzzing(instanceId);
             var model = new QueryFuzzResultModel
             {

@@ -1,4 +1,5 @@
-﻿using QueryFuzzingWebApp.Database.Models;
+﻿using QueryFuzzing.Models;
+using QueryFuzzingWebApp.Database.Models;
 
 namespace QueryFuzzingWebApp.Models
 {
